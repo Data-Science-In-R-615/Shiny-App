@@ -1,0 +1,342 @@
+---
+title: "Shiny"
+author: "Vajinder"
+date: "2024-11-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(shiny)
+ui <- fluidPage(
+  selectInput("dataset", label = "Dataset", choices = ls("package:datasets")),
+  verbatimTextOutput("summary"),
+  tableOutput("table")
+)
+server <- function(input, output, session) {
+  dataset <- reactive({
+    get(input$dataset, "package:datasets")
+  })
+
+  output$summary <- renderPrint({
+    summary(dataset())
+  })
+  
+  output$table <- renderTable({
+    dataset()
+  })
+}
+shinyApp(ui, server)
+```
+
+## 1.8
+1. Create an app that greets the user by name. You don’t know all the functions you need to do this yet, so I’ve included some lines of code below. Think about which lines you’ll use and then copy and paste them into the right place in a Shiny app.
+
+```{r}
+ui <- fluidPage(
+  textInput("name", "What's your name?"),
+  textOutput("greeting")
+)
+
+server <- function(input, output, session) {
+  output$greeting <- renderText({
+  paste0("Hello ", input$name)
+})
+}
+shinyApp(ui, server)
+```
+
+2. Suppose your friend wants to design an app that allows the user to set a number (x) between 1 and 50, and displays the result of multiplying this number by 5. This is their first attempt: Can you help them find and correct the error?
+
+In the server, while mention 'x' in the function, make sure to mention that this x is from input by referring it to as input$x
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  sliderInput("x", label = "If x is", min = 1, max = 50, value = 30),
+  "then x times 5 is",
+  textOutput("product")
+)
+
+server <- function(input, output, session) {
+  output$product <- renderText({ 
+    input$x * 5
+  })
+}
+
+shinyApp(ui, server)
+```
+
+3.Extend the app from the previous exercise to allow the user to set the value of the multiplier, y, so that the app yields the value of x * y. The final result should look like this:
+
+```{r}
+
+ui <- fluidPage(
+  sliderInput("x", label = "If x is", min = 1, max = 50, value = 30),
+  sliderInput("y", label = "and y is", min = 1, max = 50, value = 30),
+  "then x times y is",
+  textOutput("product")
+)
+
+server <- function(input, output, session) {
+  output$product <- renderText({ 
+    input$x * input$y
+  })
+}
+
+shinyApp(ui, server)
+
+
+```
+
+4. Take the following app which adds some additional functionality to the last app described in the last exercise. What’s new? How could you reduce the amount of duplicated code in the app by using a reactive expression.
+
+ui <- fluidPage(
+  sliderInput("x", "If x is", min = 1, max = 50, value = 30),
+  sliderInput("y", "and y is", min = 1, max = 50, value = 5),
+  "then, (x * y) is", textOutput("product"),
+  "and, (x * y) + 5 is", textOutput("product_plus5"),
+  "and (x * y) + 10 is", textOutput("product_plus10")
+)
+
+server <- function(input, output, session) {
+  output$product <- renderText({ 
+    product <- input$x * input$y
+    product
+  })
+  output$product_plus5 <- renderText({ 
+    product <- input$x * input$y
+    product + 5
+  })
+  output$product_plus10 <- renderText({ 
+    product <- input$x * input$y
+    product + 10
+  })
+}
+shinyApp(ui, server)
+
+```{r}
+ui <- fluidPage(
+  sliderInput("x", "If x is", min = 1, max = 50, value = 30),
+  sliderInput("y", "and y is", min = 1, max = 50, value = 5),
+  "then, (x * y) is", textOutput("product"),
+  "and, (x * y) + 5 is", textOutput("product_plus5"),
+  "and (x * y) + 10 is", textOutput("product_plus10")
+)
+
+server <- function(input, output, session) {
+  
+  prod <- reactive({
+    input$x * input$y
+    })
+  output$product <- renderText({ 
+    prod()
+  })
+  output$product_plus5 <- renderText({ 
+    prod() + 5
+  })
+  output$product_plus10 <- renderText({ 
+    prod() + 10
+  })
+}
+
+shinyApp(ui, server)
+```
+
+5. The following app is very similar to one you’ve seen earlier in the chapter: you select a dataset from a package (this time we’re using the ggplot2 package) and the app prints out a summary and plot of the data. It also follows good practice and makes use of reactive expressions to avoid redundancy of code. However, there are three bugs in the code provided below. Can you find and fix them?
+
+library(shiny)
+library(ggplot2)
+
+datasets <- c("economics", "faithfuld", "seals")
+ui <- fluidPage(
+  selectInput("dataset", "Dataset", choices = datasets),
+  verbatimTextOutput("summary"),
+  tableOutput("plot")
+)
+
+server <- function(input, output, session) {
+  dataset <- reactive({
+    get(input$dataset, "package:ggplot2")
+  })
+  output$summary <- renderPrint({
+    summary(dataset())
+  })
+  output$plot <- renderPlot({
+    plot(dataset)
+  }, res = 96)
+}
+
+shinyApp(ui, server)
+
+I only found two errors: replacing tableOutput() with plotOutput() and dataset with dataset() in output$plot
+
+```{r}
+library(shiny)
+library(ggplot2)
+
+datasets <- c("economics", "faithfuld", "seals")
+ui <- fluidPage(
+  selectInput("dataset", "Dataset", choices = datasets),
+  verbatimTextOutput("summary"),
+  plotOutput("plot")
+)
+
+server <- function(input, output, session) {
+  dataset <- reactive({
+    get(input$dataset, "package:ggplot2")
+  })
+  output$summary <- renderPrint({
+    summary(dataset())
+  })
+  output$plot <- renderPlot({
+    plot(dataset())
+  }, res = 96)
+}
+
+shinyApp(ui, server)
+```
+
+## Exercise 2.2.8
+
+1. When space is at a premium, it’s useful to label text boxes using a placeholder that appears inside the text entry area. How do you call textInput() to generate the UI below?
+
+```{r}
+
+ui <- fluidPage(
+  textInput("name","Your Name", placeholder = "Your Name")
+)
+
+server <- function(input, output, session) {
+}
+
+shinyApp(ui, server)
+```
+2. Carefully read the documentation for sliderInput() to figure out how to create a date slider, as shown below.
+
+```{r}
+ui <- fluidPage(
+  sliderInput("date", "Date", 
+              value = as.Date("2020-09-17"), 
+              min = as.Date("2020-09-16"), 
+              max = as.Date("2020-09-23"), 
+              timeFormat = "%b %d, %Y", 
+              ticks = TRUE)
+)
+
+server <- function(input, output, session) {}
+
+shinyApp(ui, server)
+```
+3. Create a slider input to select values between 0 and 100 where the interval between each selectable value on the slider is 5. Then, add animation to the input widget so when the user presses play the input widget scrolls through the range automatically.
+
+```{r}
+ui <- fluidPage(
+  sliderInput("value", "Select any value: ", value= 50, min = 0, max = 100, step = 5, animate = TRUE)
+)
+
+server <- function(input, output, session) {
+}
+shinyApp(ui, server)
+```
+4. If you have a moderately long list in a selectInput(), it’s useful to create sub-headings that break the list up into pieces. Read the documentation to figure out how. (Hint: the underlying HTML is called <optgroup>.)
+
+```{r}
+
+ui <- fluidPage(
+  selectInput("category", "Choose a course and homework from MSSP:",
+              choices = list(
+                "615" = list("HW1" = "matrices", 
+                             "HW2" = "squirrel,books,SPX", 
+                             "HW3" = "GameGit", 
+                             "HW4" = "Rainfall", 
+                             "HW5" = "Strawberry",
+                             "HW6" = "Topic Modelling", 
+                             "HW7" = "Exactly the one I am doing right now"),
+                "678" = list("Pop Quiz" = "In class", 
+                             "Reading Quiz" = "Module based", 
+                             "Review Quiz" = "Module based"),
+                "675" = list("Reading" = "Research Papers and articles", 
+                             "In class" = "Reading", 
+                             "Consulting" = "Projects")
+              )),
+  textOutput("Something about what you selected")
+)
+
+server <- function(input, output, session) {
+  output$`Something about what you selected` <- renderText(
+   paste("Something about what you selected is:", input$category) 
+  )
+}
+
+shinyApp(ui, server)
+
+```
+## 2.3.5
+
+1.Which of `textOutput()` and `verbatimTextOutput()` should each of the following render functions be paired with?
+
+- renderPrint(summary(mtcars)): `verbatimTextOutput()` 
+
+- renderText("Good morning!"): `textOutput()`
+
+- renderPrint(t.test(1:5, 2:6)): `verbatimTextOutput()` 
+
+- renderText(str(lm(mpg ~ wt, data = mtcars))): `verbatimTextOutput()` 
+
+2.Re-create the Shiny app from Section 2.3.3, this time setting height to 300px and width to 700px. Set the plot “alt” text so that a visually impaired user can tell that its a scatterplot of five random numbers.
+
+```{r}
+ui <- fluidPage(
+  plotOutput("plot", height = "300px", width = "700px")
+)
+server <- function(input, output, session) {
+  output$plot <- renderPlot(plot(1:5), res = 96, alt = "Scatterplot of five random numbers.")
+}
+shinyApp(ui, server)
+```
+3. Update the options in the call to renderDataTable() below so that the data is displayed, but all other controls are suppressed (i.e., remove the search, ordering, and filtering commands). You’ll need to read ?renderDataTable and review the options at https://datatables.net/reference/option/.
+
+```{r}
+ui <- fluidPage(
+  dataTableOutput("table")
+)
+#> `shiny::dataTableOutput()` is deprecated as of shiny 1.8.1.
+#> Please use `DT::DTOutput()` instead.
+#> See <https://rstudio.github.io/DT/shiny.html> for more information.
+server <- function(input, output, session) {
+  output$table <- renderDataTable(mtcars, options = list(searching = FALSE,
+                                                         ordering = FALSE,
+                                                         info = FALSE,
+                                                         pageLength = 5))
+}
+shinyApp(ui, server)
+
+```
+
+4. Alternatively, read up on reactable, and convert the above app to use it instead.
+
+```{r}
+library(reactable)
+ui <- fluidPage(
+  reactableOutput("table")
+)
+#> `shiny::dataTableOutput()` is deprecated as of shiny 1.8.1.
+#> Please use `DT::DTOutput()` instead.
+#> See <https://rstudio.github.io/DT/shiny.html> for more information.
+server <- function(input, output, session) {
+  output$table <- renderReactable(reactable(mtcars)) 
+}
+shinyApp(ui, server)
+```
+##
